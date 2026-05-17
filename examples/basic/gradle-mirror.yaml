@@ -1,0 +1,12 @@
+repositories:
+  - id: central
+    url: https://repo.maven.apache.org/maven2
+    releases: true
+    snapshots: false
+
+mirrors:
+  - id: central-mirror
+    url: https://repo.maven.apache.org/maven2
+    mirrorOf: central
+    releases: true
+    snapshots: false

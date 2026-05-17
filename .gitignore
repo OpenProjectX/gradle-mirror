@@ -45,3 +45,4 @@ bin/
 .DS_Store
 /.idea/
 /implement-me.md
+.secrets.properties

@@ -25,6 +25,7 @@ val buildFiles = fileTree(rootDir) {
         "settings.gradle",
         "settings.gradle.kts",
         "buildSrc",
+        "examples",
         "/build.gradle",
         "/build.gradle.kts",
         ".*",

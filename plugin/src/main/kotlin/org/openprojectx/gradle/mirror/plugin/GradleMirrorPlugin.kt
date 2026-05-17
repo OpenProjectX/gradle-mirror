@@ -7,7 +7,6 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.initialization.Settings
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.Provider
 import org.openprojectx.gradle.mirror.core.CredentialsConfig
 import org.openprojectx.gradle.mirror.core.GradleMirrorConfig
 import org.openprojectx.gradle.mirror.core.MirrorConfig
@@ -16,6 +15,7 @@ import org.openprojectx.gradle.mirror.core.RepositoryConfig
 import org.openprojectx.gradle.mirror.core.YamlMirrorConfigLoader
 import java.io.File
 import java.net.URI
+import java.util.Properties
 import javax.inject.Inject
 
 class GradleMirrorPlugin @Inject constructor(
@@ -38,7 +38,9 @@ class GradleMirrorPlugin @Inject constructor(
         extension.configFile.convention(project.layout.projectDirectory.file(DEFAULT_CONFIG_FILE))
 
         project.afterEvaluate {
-            val config = load(extension.configFile.asFile)
+            val configFile = extension.configFile.asFile.get()
+            exposeSecretProperties(project, configFile)
+            val config = load(configFile)
             val projects = if (extension.configureAllProjects.get()) {
                 project.rootProject.allprojects
             } else {
@@ -65,7 +67,9 @@ class GradleMirrorPlugin @Inject constructor(
         extension.configFile.convention(settings.layout.settingsDirectory.file(DEFAULT_CONFIG_FILE))
 
         settings.gradle.settingsEvaluated {
-            val config = load(extension.configFile.asFile)
+            val configFile = extension.configFile.asFile.get()
+            exposeSecretProperties(settings, configFile)
+            val config = load(configFile)
 
             settings.dependencyResolutionManagement { dependencyResolution ->
                 dependencyResolution.repositories { repositories ->
@@ -91,8 +95,34 @@ class GradleMirrorPlugin @Inject constructor(
         }
     }
 
-    private fun load(configFile: Provider<File>): GradleMirrorConfig =
-        YamlMirrorConfigLoader().load(configFile.get())
+    private fun load(configFile: File): GradleMirrorConfig =
+        YamlMirrorConfigLoader().load(configFile)
+
+    private fun exposeSecretProperties(project: Project, configFile: File) {
+        val secrets = loadSecretProperties(configFile)
+        secrets.forEach { (key, value) ->
+            project.extensions.extraProperties.set(key, value)
+        }
+    }
+
+    private fun exposeSecretProperties(settings: Settings, configFile: File) {
+        val secrets = loadSecretProperties(configFile)
+        secrets.forEach { (key, value) ->
+            settings.extensions.extraProperties.set(key, value)
+            settings.gradle.extensions.extraProperties.set(key, value)
+        }
+    }
+
+    private fun loadSecretProperties(configFile: File): Map<String, String> {
+        val secretsFile = configFile.parentFile.resolve(DEFAULT_SECRETS_FILE)
+        if (!secretsFile.isFile) {
+            return emptyMap()
+        }
+
+        val properties = Properties()
+        secretsFile.inputStream().use(properties::load)
+        return properties.stringPropertyNames().associateWith(properties::getProperty)
+    }
 
     private fun configureRepositories(
         repositories: RepositoryHandler,
@@ -210,5 +240,6 @@ class GradleMirrorPlugin @Inject constructor(
 
     private companion object {
         const val DEFAULT_CONFIG_FILE = "gradle-mirror.yaml"
+        const val DEFAULT_SECRETS_FILE = ".secrets.properties"
     }
 }
