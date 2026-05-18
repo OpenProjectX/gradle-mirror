@@ -1,4 +1,6 @@
 import net.researchgate.release.ReleaseExtension
+import org.gradle.plugins.signing.Sign
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 
 plugins {
     `maven-publish`
@@ -93,6 +95,10 @@ subprojects {
                 sign(publishing.publications)
             }
         }
+    }
+
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        dependsOn(tasks.withType<Sign>())
     }
 }
 
