@@ -39,41 +39,49 @@ subprojects {
 
         extensions.configure<PublishingExtension>("publishing") {
             publications {
-                // Create once per project
-                if (findByName("mavenJava") == null) {
+                // The java-gradle-plugin creates pluginMaven for the plugin module. Do not add a
+                // second publication with the same coordinates and artifacts.
+                if (project.name != "plugin" && findByName("mavenJava") == null) {
                     create<MavenPublication>("mavenJava") {
                         from(components["java"])
 
                         // Prefer explicit artifactId; by default it's project.name
                         artifactId = project.name
+                    }
+                }
+            }
 
-                        pom {
-                            // Module-specific name/description; override per-module if you want
-                            name.set(project.name)
-                            description.set("GRADLE-MIRROR Spring Boot starter")
-                            url.set("https://github.com/OpenProjectX/gradle-mirror")
-
-                            licenses {
-                                license {
-                                    name.set("Apache License 2.0")
-                                    url.set("https://www.apache.org/licenses/LICENSE-2.0")
-                                }
-                            }
-
-                            developers {
-                                developer {
-                                    id.set("OpenProjectX")
-                                    name.set("OpenProjectX")
-                                    email.set("admin@openprojectx.org")
-                                }
-                            }
-
-                            scm {
-                                url.set("https://github.com/OpenProjectX/gradle-mirror")
-                                connection.set("scm:git:https://github.com/OpenProjectX/gradle-mirror.git")
-                                developerConnection.set("scm:git:ssh://git@github.com:OpenProjectX/gradle-mirror.git")
-                            }
+            publications.withType<MavenPublication>().configureEach {
+                pom {
+                    name.set(
+                        when (project.name) {
+                            "plugin" -> "Gradle Mirror Plugin"
+                            "core" -> "Gradle Mirror Core"
+                            else -> project.name
                         }
+                    )
+                    description.set("Configures Gradle repositories from YAML using Maven-style mirrorOf rules.")
+                    url.set("https://github.com/OpenProjectX/gradle-mirror")
+
+                    licenses {
+                        license {
+                            name.set("Apache License 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id.set("OpenProjectX")
+                            name.set("OpenProjectX")
+                            email.set("admin@openprojectx.org")
+                        }
+                    }
+
+                    scm {
+                        url.set("https://github.com/OpenProjectX/gradle-mirror")
+                        connection.set("scm:git:https://github.com/OpenProjectX/gradle-mirror.git")
+                        developerConnection.set("scm:git:ssh://git@github.com:OpenProjectX/gradle-mirror.git")
                     }
                 }
             }
@@ -110,11 +118,7 @@ nexusPublishing {
             nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
             snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username.set(System.getenv("OSSRH_USERNAME"))
-            logger.info("using username: ${System.getenv("OSSRH_USERNAME")}")
-
             password.set(System.getenv("OSSRH_PASSWORD"))
-            logger.info("using password: ${System.getenv("OSSRH_PASSWORD")}")
-
         }
     }
 }
