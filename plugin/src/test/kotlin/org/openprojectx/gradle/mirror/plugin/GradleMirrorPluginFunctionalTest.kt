@@ -56,6 +56,76 @@ class GradleMirrorPluginFunctionalTest {
     }
 
     @Test
+    fun `project plugin does nothing when default config file is missing`() {
+        projectDir.resolve("settings.gradle.kts").writeText("""rootProject.name = "sample"""")
+        projectDir.resolve("build.gradle.kts").writeText(
+            """
+            plugins {
+                id("org.openprojectx.gradle.mirror")
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            tasks.register("printRepos") {
+                doLast {
+                    repositories.forEach {
+                        println("repo=" + it.name + ":" + (it as org.gradle.api.artifacts.repositories.MavenArtifactRepository).url)
+                    }
+                }
+            }
+            """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments("printRepos", "--stacktrace")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":printRepos")?.outcome)
+        assertTrue(result.output.contains("repo=MavenRepo:https://repo.maven.apache.org/maven2/"))
+    }
+
+    @Test
+    fun `settings plugin does nothing when default config file is missing`() {
+        projectDir.resolve("settings.gradle.kts").writeText(
+            """
+            pluginManagement {
+                repositories {
+                    gradlePluginPortal()
+                }
+            }
+
+            plugins {
+                id("org.openprojectx.gradle.mirror")
+            }
+
+            rootProject.name = "sample"
+            """.trimIndent(),
+        )
+        projectDir.resolve("build.gradle.kts").writeText(
+            """
+            tasks.register("printRepos") {
+                doLast {
+                    println("ok")
+                }
+            }
+            """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments("printRepos", "--stacktrace")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":printRepos")?.outcome)
+        assertTrue(result.output.contains("ok"))
+    }
+
+    @Test
     fun `project plugin resolves credentials from secrets properties file`() {
         projectDir.resolve("settings.gradle.kts").writeText("""rootProject.name = "sample"""")
         projectDir.resolve(".secrets.properties").writeText(

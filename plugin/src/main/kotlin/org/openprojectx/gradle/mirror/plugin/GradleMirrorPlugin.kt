@@ -96,7 +96,11 @@ class GradleMirrorPlugin @Inject constructor(
     }
 
     private fun load(configFile: File): GradleMirrorConfig =
-        YamlMirrorConfigLoader().load(configFile)
+        if (configFile.isFile) {
+            YamlMirrorConfigLoader().load(configFile)
+        } else {
+            GradleMirrorConfig()
+        }
 
     private fun exposeSecretProperties(project: Project, configFile: File) {
         val secrets = loadSecretProperties(configFile)

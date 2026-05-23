@@ -14,7 +14,7 @@ The plugin can be applied to either a project build script or a settings script.
 
 ## YAML Configuration
 
-By default, the plugin reads `gradle-mirror.yaml` from the project directory when applied to a project, or from the settings directory when applied to settings.
+By default, the plugin looks for `gradle-mirror.yaml` in the project directory when applied to a project, or in the settings directory when applied to settings. The file is optional; when it is missing, the plugin leaves repository configuration unchanged.
 
 ```yaml
 repositories:
@@ -79,7 +79,7 @@ Project extension options:
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `configFile` | `gradle-mirror.yaml` | YAML config file. |
+| `configFile` | `gradle-mirror.yaml` | Optional YAML config file. |
 | `replaceExisting` | `true` | Removes existing Maven repositories that match a configured mirror and adds the mirror. |
 | `configureAllProjects` | `true` | Applies repository configuration to all projects from the root project. Set to `false` to configure only the current project. |
 
